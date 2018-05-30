@@ -15,7 +15,6 @@ unsigned char check;
 unsigned char t_byte1, t_byte2, h_Byte1, h_byte2;
 unsigned char sum;
 int leerHum, display, contador;
-int memVideo[4]={0};
 
 #define dht11 PIN_C4
 #bit inDataDht = 0x94.0
@@ -62,6 +61,18 @@ char readData(){
    return i;
 }
 
+#INT_TIMER0
+void timer_isr(void){
+   contador++;
+   if(contador==8){ 
+      contador=0;
+      if(display==16){
+         display=1;
+      }
+      output_d(memVideo[0]);
+      display*=2;
+   }
+}
 
 #INT_RB
 void interrupt_isr(void){
@@ -77,8 +88,11 @@ void main() {
    set_tris_d(0x00);
    set_tris_e(0x08);
    output_a(0x0F);
+   enable_interrupts(INT_TIMER0);
    enable_interrupts(INT_RB);
    enable_interrupts(GLOBAL);
+   setup_timer_0(RTCC_INTERNAL | RTCC_DIV_128);
+   int datos[4]={0};
    while(true){
       startSignal();
       checkResponse();
@@ -91,8 +105,16 @@ void main() {
          if(sum == ((h_Byte1+h_byte2+t_byte1+t_byte2) & 0xFF)){
             if(leerHum==1){
                output_e(0x02);
+               datos[0] = h_Byte1/10; //decenas
+               datos[1] = h_Byte1%10; //unidades
+               datos[2] = h_byte2/10; //decimas
+               datos[3] = h_byte2%10; //centesimas 
             }else{
                output_e(0x01);
+               datos[0] = t_byte1/10; //decenas
+               datos[1] = t_byte1%10; //unidades
+               datos[2] = t_byte2/10; //decimas
+               datos[3] = t_byte2%10; //centesimas
             }   
          }
       } 
