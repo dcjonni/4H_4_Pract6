@@ -35,17 +35,16 @@ void startSignal(){
    
 }
 
-char check_Response(){
+void check_Response(){
    
    disable_interrupts(GLOBAL);
    inDataDht = 1;
-   check=0;
    delay_us(40);
    if(!input(dht11)){
       delay_us(80);
       if(input(dht11)){
          delay_us(40);
-         return 1; 
+         check=1;
       }
    }
    enable_interrupts(GLOBAL);
@@ -104,6 +103,7 @@ void main() {
    setup_timer_0(RTCC_INTERNAL | RTCC_DIV_128 | RTCC_8_BIT);
    enable_interrupts(INT_TIMER0);
    enable_interrupts(GLOBAL);
+   int valoresCorrectos;
    int datos[4]={0};
    int num[10]={63,6,91,79,102,109,125,7,127,103};
    while(true){
@@ -111,36 +111,42 @@ void main() {
       if(lectura==1){
       lectura=0;
       startSignal();
-      if(check_Response()){
+      check_Response();
+      }
+      if(check==1){
+         check=0;
+         valoresCorrectos=0;
          h_Byte1 = readData();
          h_byte2 = readData();
          t_byte1 = readData();
          t_byte2 = readData();
          sum = readData();
          if(sum == ((h_Byte1+h_byte2+t_byte1+t_byte2) & 0xFF)){
-            if(leerHum==1){
-               output_e(0x02);
-               datos[0] = h_Byte1/10; //decenas
-               datos[1] = h_Byte1%10; //unidades
-               datos[2] = h_byte2/10; //decimas
-               datos[3] = h_byte2%10; //centesimas 
-               memVideo[0] =num[datos[0]];
-               memVideo[1] =num[datos[1]] + punto;
-               memVideo[2] =num[datos[2]];
-               memVideo[3] =num[datos[3]];
-            }else{
-               output_e(0x01);
-               datos[0] = t_byte1/10; //decenas
-               datos[1] = t_byte1%10; //unidades
-               datos[2] = t_byte2/10; //decimas
-               datos[3] = t_byte2%10; //centesimas
-               memVideo[0] =num[datos[0]];
-               memVideo[1] =num[datos[1]] + punto;
-               memVideo[2] =num[datos[2]];
-               memVideo[3] =num[datos[3]];
-            }
+            valoresCorrectos=1;
          }
       }
+      if(valoresCorrectos==1){
+         if(leerHum==1){
+            output_e(0x02);
+            datos[0] = h_Byte1/10; //decenas
+            datos[1] = h_Byte1%10; //unidades
+            datos[2] = h_byte2/10; //decimas
+            datos[3] = h_byte2%10; //centesimas 
+            memVideo[0] =num[datos[0]];
+            memVideo[1] =num[datos[1]] + punto;
+            memVideo[2] =num[datos[2]];
+            memVideo[3] =num[datos[3]];
+         }else{
+            output_e(0x01);
+            datos[0] = t_byte1/10; //decenas
+            datos[1] = t_byte1%10; //unidades
+            datos[2] = t_byte2/10; //decimas
+            datos[3] = t_byte2%10; //centesimas
+            memVideo[0] =num[datos[0]];
+            memVideo[1] =num[datos[1]] + punto;
+            memVideo[2] =num[datos[2]];
+            memVideo[3] =num[datos[3]];
+         }
       }
    } 
 }
