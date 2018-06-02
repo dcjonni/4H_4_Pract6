@@ -4,45 +4,42 @@
 #fuses NOPBADEN, STVREN, NOLVP, NODEBUG,
 
 #use delay(clock=16000000)
-//#use fast_io(A)
-//#use fast_io(B)
-//#use fast_io(D)
-//#use fast_io(E)
 #use standard_io(c)
 
 #define punto 128
-#define dht11 PIN_C4
+#define dht11Pin PIN_C4
 
-#bit inDataDht = 0xF94.4
-#bit dataDht = 0xF82.4
+#bit trisPinC4 = 0xF94.4
+//#bit dataDht = 0xF82.4
 
 unsigned char check;
-unsigned char t_byte1, t_byte2, h_Byte1, h_byte2;
-unsigned char sum;
-int leerHum=0, posicion, contador, lectura;
+unsigned char humedadEntera_Byte1, humedadDecimal_Byte2;
+unsigned char temperaturaEntera_Byte3, temperaturaDecimal_Byte4;
+unsigned char checksum_Byte5;
+int Humedad=0, posicion, contador, inicioComunicacion;
 int memVideo[4]={0};
 
 void startSignal(){
    
    disable_interrupts(GLOBAL);
-   inDataDht = 0;
-   output_high(dht11);
-   output_low(dht11);
+   trisPinC4 = 0;
+   output_high(dht11Pin);
+   output_low(dht11Pin);
    delay_ms(18);
-   output_high(dht11);
+   output_high(dht11Pin);
    delay_us(30);
-   inDataDht = 1;
+   trisPinC4 = 1;
    
 }
 
 void check_Response(){
    
    disable_interrupts(GLOBAL);
-   inDataDht = 1;
+   trisPinC4 = 1;
    delay_us(40);
-   if(!input(dht11)){
+   if(!input(dht11Pin)){
       delay_us(80);
-      if(input(dht11)){
+      if(input(dht11Pin)){
          delay_us(40);
          check=1;
       }
@@ -53,16 +50,16 @@ void check_Response(){
 char readData(){
    
    disable_interrupts(GLOBAL);
-   inDataDht = 1;
+   trisPinC4 = 1;
    char i, j;
    for(j=0; j<8; j++){
-      while(!input(dht11));
+      while(!input(dht11Pin));
       delay_us(30);
-      if(input(dht11) == 0){
+      if(input(dht11Pin) == 0){
          i&= ~(1<<(7-j));
       }else{
          i|= (1<<(7-j));
-         while(input(dht11)==1);
+         while(input(dht11Pin)==1);
       }
    }
    enable_interrupts(GLOBAL);
@@ -81,15 +78,14 @@ void timer0_isr(void){
    contador++;
    if(contador==122){ 
       contador=0;
-      lectura=1;
+      inicioComunicacion=1;
    }
-   
 }
 
 #INT_RB
 void interrupt_isr(void){
    if(input(PIN_B4)==1)
-      leerHum=!leerHum;
+      Humedad=!Humedad;
 }
 
 void main() {
@@ -105,47 +101,47 @@ void main() {
    enable_interrupts(GLOBAL);
    int valoresCorrectos;
    int datos[4]={0};
-   int num[10]={63,6,91,79,102,109,125,7,127,103};
+   int numeros[10]={63,6,91,79,102,109,125,7,127,103};
    while(true){
       
-      if(lectura==1){
-      lectura=0;
+      if(inicioComunicacion==1){
+      inicioComunicacion=0;
       startSignal();
       check_Response();
       }
       if(check==1){
          check=0;
          valoresCorrectos=0;
-         h_Byte1 = readData();
-         h_byte2 = readData();
-         t_byte1 = readData();
-         t_byte2 = readData();
-         sum = readData();
-         if(sum == ((h_Byte1+h_byte2+t_byte1+t_byte2) & 0xFF)){
+         humedadEntera_Byte1 = readData();
+         humedadDecimal_Byte2 = readData();
+         temperaturaEntera_Byte3 = readData();
+         temperaturaDecimal_Byte4 = readData();
+         checksum_Byte5 = readData();
+         if(checksum_Byte5 == ((humedadEntera_Byte1+humedadDecimal_Byte2+temperaturaEntera_Byte3+temperaturaDecimal_Byte4) & 0xFF)){
             valoresCorrectos=1;
          }
       }
       if(valoresCorrectos==1){
-         if(leerHum==1){
+         if(Humedad==1){
             output_e(0x02);
-            datos[0] = h_Byte1/10; //decenas
-            datos[1] = h_Byte1%10; //unidades
-            datos[2] = h_byte2/10; //decimas
-            datos[3] = h_byte2%10; //centesimas 
-            memVideo[0] =num[datos[0]];
-            memVideo[1] =num[datos[1]] + punto;
-            memVideo[2] =num[datos[2]];
-            memVideo[3] =num[datos[3]];
+            datos[0] = humedadEntera_Byte1/10; //decenas
+            datos[1] = humedadEntera_Byte1%10; //unidades
+            datos[2] = humedadDecimal_Byte2/10; //decimas
+            datos[3] = humedadDecimal_Byte2%10; //centesimas 
+            memVideo[0] =numeros[datos[0]];
+            memVideo[1] =numeros[datos[1]] + punto;
+            memVideo[2] =numeros[datos[2]];
+            memVideo[3] =numeros[datos[3]];
          }else{
             output_e(0x01);
-            datos[0] = t_byte1/10; //decenas
-            datos[1] = t_byte1%10; //unidades
-            datos[2] = t_byte2/10; //decimas
-            datos[3] = t_byte2%10; //centesimas
-            memVideo[0] =num[datos[0]];
-            memVideo[1] =num[datos[1]] + punto;
-            memVideo[2] =num[datos[2]];
-            memVideo[3] =num[datos[3]];
+            datos[0] = temperaturaEntera_Byte3/10; //decenas
+            datos[1] = temperaturaEntera_Byte3%10; //unidades
+            datos[2] = temperaturaDecimal_Byte4/10; //decimas
+            datos[3] = temperaturaDecimal_Byte4%10; //centesimas
+            memVideo[0] =numeros[datos[0]];
+            memVideo[1] =numeros[datos[1]] + punto;
+            memVideo[2] =numeros[datos[2]];
+            memVideo[3] =numeros[datos[3]];
          }
       }
    } 
