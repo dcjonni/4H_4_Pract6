@@ -76,7 +76,7 @@ void timer0_isr(void){
       posicion=0;
    }
    contador++;
-   if(contador==122){ 
+   if(contador==244){ 
       contador=0;
       inicioComunicacion=1;
    }
@@ -96,7 +96,7 @@ void main() {
    set_tris_e(0x08);
    setup_oscillator(OSC_16MHZ);
    enable_interrupts(INT_RB);
-   setup_timer_0(RTCC_INTERNAL | RTCC_DIV_128 | RTCC_8_BIT);
+   setup_timer_0(RTCC_INTERNAL | RTCC_DIV_64 | RTCC_8_BIT);
    enable_interrupts(INT_TIMER0);
    enable_interrupts(GLOBAL);
    int valoresCorrectos;
@@ -128,20 +128,20 @@ void main() {
             datos[1] = humedadEntera_Byte1%10; //unidades
             datos[2] = humedadDecimal_Byte2/10; //decimas
             datos[3] = humedadDecimal_Byte2%10; //centesimas 
-            memVideo[0] =numeros[datos[0]];
-            memVideo[1] =numeros[datos[1]] + punto;
-            memVideo[2] =numeros[datos[2]];
-            memVideo[3] =numeros[datos[3]];
+            memVideo[0] = numeros[datos[0]];
+            memVideo[1] = numeros[datos[1]] + punto;
+            memVideo[2] = numeros[datos[2]];
+            memVideo[3] = numeros[datos[3]];
          }else{
             output_e(0x01);
             datos[0] = temperaturaEntera_Byte3/10; //decenas
             datos[1] = temperaturaEntera_Byte3%10; //unidades
             datos[2] = temperaturaDecimal_Byte4/10; //decimas
             datos[3] = temperaturaDecimal_Byte4%10; //centesimas
-            memVideo[0] =numeros[datos[0]];
-            memVideo[1] =numeros[datos[1]] + punto;
-            memVideo[2] =numeros[datos[2]];
-            memVideo[3] =numeros[datos[3]];
+            memVideo[0] = numeros[datos[0]];
+            memVideo[1] = numeros[datos[1]] + punto;
+            memVideo[2] = numeros[datos[2]];
+            memVideo[3] = numeros[datos[3]];
          }
       }
    } 
